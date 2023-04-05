@@ -186,6 +186,24 @@ def test_speech_commands(configs, gpu_id=None, model=None):
                                         0, gpu_id is not None, 10)
     if not isinstance(accuracy, list):
         accuracy = [accuracy]
+
+    # bad labels implementation
+    bad_labels = []
+    # confusion matrix implementation 
+    confusion_matrix = np.zeros((configs.num_classes, configs.num_classes))
+    for i, (data, target) in enumerate(dataloader_test):
+        if gpu_id is not None:
+            data, target = data.cuda(gpu_id), target.cuda(gpu_id)
+        output = model(data)
+        pred = output.data.max(1)[1]
+        for j in range(len(target)):
+            if target[j] != pred[j]:
+                bad_labels.append((target[j], pred[j]))
+            confusion_matrix[target[j], pred[j]] += 1
+
+    print('bad labels: {}'.format(bad_labels))
+    print('confusion matrix: {}'.format(confusion_matrix))
+
     print('checkpoint: {}, loss: {}, accuracy: {}'.format(
         configs.checkpoint, valid_loss, ['%.4f%%' % (x * 100) for x in accuracy]))
     
